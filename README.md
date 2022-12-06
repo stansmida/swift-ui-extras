@@ -1,1 +1,3 @@
-# swift-ui-extras
+# SUIExtras
+
+A description of this package.
