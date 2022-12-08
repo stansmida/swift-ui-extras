@@ -138,7 +138,7 @@ public final class TextTokenFieldManager: ObservableObject {
         let triggeringCharacter = text.characters[triggeringIndex]
         let selection = selection(in: text)
         let insertionRange = triggeringIndex ..< max(triggeringIndex, selection.upperBound)
-        var insertion = AttributedString(token.text, attributes: token.attributes)
+        var insertion = AttributedString(token.text, attributes: AttributeContainer(defaultTypingAttributes).merging(token.attributes))
         if let appendCharacter {
             insertion += AttributedString(String(appendCharacter))
         }
