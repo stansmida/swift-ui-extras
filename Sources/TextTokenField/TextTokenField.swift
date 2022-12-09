@@ -43,7 +43,7 @@ public final class TextTokenFieldManager: ObservableObject {
         uiView.keyboardType = keyboardType
         self.triggers = Set(triggers)
         self.triggerCancellers = triggerCancellers
-        self.defaultTypingAttributes = defaultTypingAttributes.map { .init($0) } ?? uiView.typingAttributes
+        self.defaultTypingAttributes = defaultTypingAttributes ?? .init(uiView.typingAttributes)
         self.phraseMarkingColor = phraseMarkingColor
         uiViewDelegate = TextViewDelegate(manager: self)
     }
@@ -79,7 +79,7 @@ public final class TextTokenFieldManager: ObservableObject {
 
     public let triggers: Set<Character>
     public let triggerCancellers: CharacterSet
-    public let defaultTypingAttributes: [NSAttributedString.Key: Any]
+    public let defaultTypingAttributes: AttributeContainer
     public let phraseMarkingColor: UIColor
 
     public var text: String { uiView.text }
@@ -139,7 +139,7 @@ public final class TextTokenFieldManager: ObservableObject {
         let triggeringCharacter = text.characters[triggeringIndex]
         let selection = selection(in: text)
         let insertionRange = triggeringIndex ..< max(triggeringIndex, selection.upperBound)
-        var insertion = AttributedString(token.text, attributes: AttributeContainer(defaultTypingAttributes).merging(token.attributes))
+        var insertion = AttributedString(token.text, attributes: defaultTypingAttributes.merging(token.attributes))
         if let appendCharacter {
             insertion += AttributedString(String(appendCharacter))
         }
@@ -217,7 +217,7 @@ public final class TextTokenFieldManager: ObservableObject {
 
     /// Used primarily when the selection is changed. It preserves the ipnut text from inheriting attributes
     /// (e.g. text token colors, ...) from the text preceding the caret.
-    private func resetTypingAttributes() { uiView.typingAttributes = defaultTypingAttributes }
+    private func resetTypingAttributes() { uiView.typingAttributes = .init(defaultTypingAttributes) }
 
     private func updatePhraseMarking() {
         var text = attributedText(withTextTokens: true)
@@ -394,7 +394,7 @@ public final class TextTokenFieldManager: ObservableObject {
         if let wholeTokensRange = wholeTokensSelection(for: inputRange, in: text) {
             // The offered input range disruptes text tokens integrity as it intersecting some. We must
             // preserve the integrity, take tokens as whole, thus make manual edit instead of continue.
-            let insertion = AttributedString(NSAttributedString(string: insertion, attributes: defaultTypingAttributes))
+            let insertion = AttributedString(NSAttributedString(string: insertion, attributes: .init(defaultTypingAttributes)))
             replaceSubrange(wholeTokensRange, with: insertion, in: text)
             return false
         } else if let tti, !tti.isExplicit, insertion.isEmpty, range.length == 1, tti.trigger == inputRange.lowerBound {
