@@ -136,6 +136,7 @@ public final class TextTokenFieldManager: ObservableObject {
             // TTI is inactive, ignore the caller.
             return
         }
+        self.tti = nil
         let triggeringCharacter = text.characters[triggeringIndex]
         let selection = selection(in: text)
         let insertionRange = triggeringIndex ..< max(triggeringIndex, selection.upperBound)
