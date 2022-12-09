@@ -3,6 +3,7 @@ import Foundation
 import SwiftUI
 import UIKit
 
+#warning("TODO: Fix an issue where an active trigger gets overriden by another triggering char input. We want to allow those characters in the phrase.")
 public struct TextTokenField: UIViewRepresentable {
 
     public init(manager: TextTokenFieldManager) {
@@ -82,7 +83,13 @@ public final class TextTokenFieldManager: ObservableObject {
     public let defaultTypingAttributes: AttributeContainer
     public let phraseMarkingColor: UIColor
 
-    public var text: String { uiView.text }
+    public var text: String {
+        get { uiView.text }
+        set {
+            tti = nil
+            uiView.text = newValue
+        }
+    }
 
     /// `TextToken`s in `text`.
     public var tokens: [(any TextToken, Range<String.Index>)] {
