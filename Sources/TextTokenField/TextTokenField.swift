@@ -34,7 +34,7 @@ public final class TextTokenFieldManager: ObservableObject {
         text: AttributedString = AttributedString(),
         triggers: Character...,
         triggerCancellers: CharacterSet = .newlines,
-        defaultTypingAttributes: [NSAttributedString.Key: Any]? = nil,
+        defaultTypingAttributes: AttributeContainer? = nil,
         phraseMarkingColor: UIColor = .placeholderText,
         keyboardType: UIKeyboardType = .default
     ) {
@@ -43,7 +43,7 @@ public final class TextTokenFieldManager: ObservableObject {
         uiView.keyboardType = keyboardType
         self.triggers = Set(triggers)
         self.triggerCancellers = triggerCancellers
-        self.defaultTypingAttributes = defaultTypingAttributes ?? uiView.typingAttributes
+        self.defaultTypingAttributes = defaultTypingAttributes.map { .init($0) } ?? uiView.typingAttributes
         self.phraseMarkingColor = phraseMarkingColor
         uiViewDelegate = TextViewDelegate(manager: self)
     }
@@ -52,10 +52,6 @@ public final class TextTokenFieldManager: ObservableObject {
 
     fileprivate let uiView: UITextView
     private var uiViewDelegate: TextViewDelegate!
-    private let triggers: Set<Character>
-    private let triggerCancellers: CharacterSet
-    private let defaultTypingAttributes: [NSAttributedString.Key: Any]
-    private let phraseMarkingColor: UIColor
 
     /// The source of truth whether TTI is active or inactive. Apparently, `nil` value means inactive mode.
     /// `isExplicit` is a flag that controls active TTI cancellation behavior. Explicitly activated TTI means
@@ -80,6 +76,11 @@ public final class TextTokenFieldManager: ObservableObject {
     // MARK: - Public API
 
     // MARK: Accessing properties
+
+    public let triggers: Set<Character>
+    public let triggerCancellers: CharacterSet
+    public let defaultTypingAttributes: [NSAttributedString.Key: Any]
+    public let phraseMarkingColor: UIColor
 
     public var text: String { uiView.text }
 
