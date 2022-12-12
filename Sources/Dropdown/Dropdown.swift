@@ -1,41 +1,44 @@
 import SwiftUI
 
-/**
- - Note: Currently only top edge is supported.
- */
 private struct Dropdown<DropdownContent>: ViewModifier where DropdownContent: View {
 
     init(
+        isPresented: Bool,
         offset: CGFloat,
+        maxLength: CGFloat,
         cornerRadius: CGFloat,
         @ViewBuilder dropdownContentBuilder: @escaping () -> DropdownContent
     ) {
+        self.isPresented = isPresented
         self.offset = offset
+        self.maxLength = maxLength
         self.cornerRadius = cornerRadius
         self.dropdownContentBuilder = dropdownContentBuilder
     }
 
+    private let isPresented: Bool
     private let offset: CGFloat
+    private let maxLength: CGFloat
     private let cornerRadius: CGFloat
     private let dropdownContentBuilder: () -> DropdownContent
-
-    #warning("adjust, test...")
-    /// This serves as kind of "max height". It offers 300 px height in opposite to `content` height.
-    /// Typically the `content` is text field so height is rather small. This results in number of full text lines being truncated
-    /// for small height. On the other side, if that text wrapper is `fixedSize()` the number of lines could outsize the 300px.
-    /// So ideal solution is to let text wrapper trucate to fit but offer max height.
-    private let idealMaxHeight = CGFloat(100)
 
     @Environment(\.displayScale) private var displayScale
 
     func body(content: Content) -> some View {
-        if case let dropdownContent = dropdownContentBuilder(), !(dropdownContent is EmptyView) {
-            content
-                .anchorPreference(key: DropdownBaseViewBounds.self, value: .bounds, transform: { $0 })
-                .overlayPreferenceValue(DropdownBaseViewBounds.self) { bounds in
+        content
+            .anchorPreference(key: DropdownBaseViewBounds.self, value: .bounds, transform: { $0 })
+            .overlayPreferenceValue(DropdownBaseViewBounds.self) { bounds in
+                // We condition presence of the dropdown here, with the very same, stable `content` (above),
+                // to preserve identity and state of sensitive views in `content`, like for instance text field, that
+                // would control presence of this dropdown.
+                if isPresented {
                     GeometryReader { geometryProxy in
-                        dropdownContent
-//                          .frame(width: geometryProxy[bounds!].width, alignment: .leading)
+
+                        dropdownContentBuilder()
+
+                            // Stretch `dropdownContent` to width od the casting view.
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
                             .background(
                                 RoundedRectangle(cornerRadius: cornerRadius)
                                     .stroke(Color(.separator), style: .init(lineWidth: 1 / displayScale))
@@ -43,18 +46,16 @@ private struct Dropdown<DropdownContent>: ViewModifier where DropdownContent: Vi
                                     .shadow(color: Color(.separator), radius: offset * 2, x: .zero, y: -offset)
                             )
 
-                        // Offer dropdownContent ideal max height so views with dynamic sizing like text wrappers can
-                        // take the most of the space without need to fix size.
-                            .frame(height: idealMaxHeight, alignment: .bottom)
+                            // Set the limit for `dropdownContent` size. This sets the cast frame, casted from the
+                            // base frame defined below.
+                            .frame(height: maxLength, alignment: .bottom)
 
-                        // Take what is proposed, align by bottom so offset can be the height.
+                            // The two lines below make the base frame that we cast from.
                             .offset(x: .zero, y: -geometryProxy[bounds!].height - offset)
                             .frame(width: geometryProxy[bounds!].width, height: geometryProxy[bounds!].height, alignment: .bottom)
                     }
                 }
-        } else {
-            content
-        }
+            }
     }
 }
 
@@ -69,14 +70,26 @@ private enum DropdownBaseViewBounds: PreferenceKey {
 
 public extension View {
 
-    func dropdown<DropdownContent>(
+    /// Casts content in "dropdown" container.
+    /// - Note: Currently only casting upwards (from the top edge) is supported.
+    /// - Parameters:
+    ///   - isPresented: Controls presence of the dropdown.
+    ///   - offset: Spacing from the view that casts the dropdown.
+    ///   - maxLength: Limit the size of the dropdown, length on axis of the cast direction.
+    ///   - cornerRadius: Round corner radius of the dropdown.
+    ///   - content: Content in the dropdown.
+    @ViewBuilder func dropdown<DropdownContent>(
+        isPresented: Bool,
         offset: CGFloat = 4,
+        maxLength: CGFloat = 100,
         cornerRadius: CGFloat,
         @ViewBuilder content: @escaping () -> DropdownContent
     ) -> some View where DropdownContent: View {
         modifier(
             Dropdown(
+                isPresented: isPresented,
                 offset: offset,
+                maxLength: maxLength,
                 cornerRadius: cornerRadius,
                 dropdownContentBuilder: content
             )

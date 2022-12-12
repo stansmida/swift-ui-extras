@@ -3,7 +3,6 @@ import Foundation
 import SwiftUI
 import UIKit
 
-#warning("TODO: Fix an issue where an active trigger gets overriden by another triggering char input. We want to allow those characters in the phrase.")
 public struct TextTokenField: UIViewRepresentable {
 
     public init(manager: TextTokenFieldManager) {
@@ -119,12 +118,14 @@ public final class TextTokenFieldManager: ObservableObject {
         return (trigger, phrase)
     }
 
-    public var contentSize: CGSize {
-        CGSize(
-            width: uiView.contentInset.left + uiView.contentSize.width + uiView.contentInset.right,
-            height: uiView.contentInset.top + uiView.contentSize.height + uiView.contentInset.bottom
-        )
+    /// Estimation based on `defaultTypingAttributes` font.
+    public func estimatedHeight(forNumberOfLines lines: Int) -> CGFloat {
+        defaultTypingAttributes.uiKit.font!.lineHeight * CGFloat(lines)
+        + uiView.textContainerInset.top
+        + uiView.textContainerInset.bottom
     }
+
+    public var contentSize: CGSize { uiView.contentSize }
 
     // MARK: Manipulation
 
@@ -176,6 +177,7 @@ public final class TextTokenFieldManager: ObservableObject {
         guard triggers.contains(character) else {
             return
         }
+        cancelTriggering()
         if case let text = attributedText(withTextTokens: false),
            case let selection = selection(in: text),
            selection.lowerBound > text.startIndex,
@@ -449,9 +451,12 @@ public final class TextTokenFieldManager: ObservableObject {
         } else {
             let beforeCaretIndex = text.index(beforeCharacter: selection.lowerBound)
             if triggers.contains(text.characters[beforeCaretIndex]),
-               !containsTriggerCanceller(text[selection]) {
+               !containsTriggerCanceller(text[selection]),
+               // Either TTI is inactive, or preserve the current one. But we don't allow to override current
+               // triggering character with another one. We want to allow those characters in phrases.
+               tti == nil || tti!.trigger >= beforeCaretIndex {
                 // The caret (selection) starts just behind a trigerring character and the selection doesn't contain
-                // any cancelling character..
+                // any cancelling character...
                 newTTI = (beforeCaretIndex, tti?.isExplicit ?? isInputTriggerExplicit)
             } else if let tti,
                       beforeCaretIndex > tti.trigger,

@@ -27,12 +27,17 @@ extension AttributeScopes {
             typealias Value = AnyTextToken
 
             static let inheritedByAddedText = false
-            static let name = "com.svagant.TextTokenAttributes.TextToken"
+            static let name = "swift-ui-extras.TextToken"
         }
 
         let textToken: TextToken
 
-        #warning("test and if indeed required then document it")
+        /// When converting `AttributedString` (which this library uses as base type to work with string attribution)
+        /// from/to `String` or `NSAttributedString`, we use API to include an attribute scope. We need to preserve
+        /// attributes from more scopes though. In addition to ``TextTokenAttributes`` (to store info about tokens),
+        /// we need to preserve visual attributes that are compatible with underlying text field (currently
+        /// `UIKitAttributes` for `UITextView` text field). We do this by nesting the scopes like this.
+        /// See more in [AttributedString.init(_:including:)](https://developer.apple.com/documentation/foundation/attributedstring/3787693-init).
         let uiKitAttributes: UIKitAttributes
     }
 }
