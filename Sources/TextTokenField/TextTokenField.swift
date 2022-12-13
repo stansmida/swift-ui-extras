@@ -23,11 +23,17 @@ public struct TextTokenField: UIViewRepresentable {
 /// - Note: In this type, the documentation is using "TTI" acronym for "Text Token Input". Active TTI means
 /// a mode when the component accepts `TextToken`s and is providing a character that triggered the active mode and
 /// a phrase that was input during the active mode.
+@MainActor
 public final class TextTokenFieldManager: ObservableObject {
 
     private enum TriggerCancellationStrategy {
         case deleteTrigger
         case deleteTriggerAndPhrase
+    }
+
+    deinit {
+        contentSizeObservation.invalidate()
+        contentSizeObservation = nil
     }
 
     public init(
@@ -46,12 +52,22 @@ public final class TextTokenFieldManager: ObservableObject {
         self.defaultTypingAttributes = defaultTypingAttributes ?? .init(uiView.typingAttributes)
         self.phraseMarkingColor = phraseMarkingColor
         uiViewDelegate = TextViewDelegate(manager: self)
+        contentSizeObservation = uiView.observe(\.contentSize, options: [.old, .new]) { [weak self] _, change in
+            if change.newValue != change.oldValue {
+                Task { @MainActor [weak self] in
+                    withAnimation {
+                        self?.objectWillChange.send()
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Private properties
 
     fileprivate let uiView: UITextView
     private var uiViewDelegate: TextViewDelegate!
+    private var contentSizeObservation: NSKeyValueObservation!
 
     /// The source of truth whether TTI is active or inactive. Apparently, `nil` value means inactive mode.
     /// `isExplicit` is a flag that controls active TTI cancellation behavior. Explicitly activated TTI means
