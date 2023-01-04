@@ -54,6 +54,19 @@ struct ContentView: View {
                     }
                 }
             }
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(
+                        action: {
+                            let user = User(name: "You")
+                            let text = "Hi \(user.name). This is an example of how to preset the field with text with a token included..."
+                            let tokenRange = text.range(of: user.name)!
+                            textManager.setText(text, with: [(user, tokenRange)])
+                        },
+                        label: { Image(systemName: "sparkles") }
+                    )
+                }
+            }
         }
     }
 
@@ -134,7 +147,7 @@ struct ContentView: View {
                                     messages.append(pendingMessage)
                                     scrolledMessageID = nextScrolledMessageID
                                     nextScrolledMessageID = UUID()
-                                    textManager.text = String()
+                                    textManager.setText(String())
                                     self.pendingMessage = nil
                                 }
                             }
@@ -225,7 +238,7 @@ struct ContentView: View {
         VStack {
             ForEach(users, id: \.id) { user in
                 Button(
-                    action: { textManager.insert(token: user, appendCharacter: " ") },
+                    action: { textManager.insertToken(user, representedBy: user.name, appendCharacter: " ") },
                     label: { Text(user.name).frame(maxWidth: .infinity, alignment: .leading) }
                 )
             }
@@ -244,7 +257,7 @@ struct ContentView: View {
                 Button(
                     action: {
                         dataManager.tags.append(tag)
-                        textManager.insert(token: tag, appendCharacter: nil)
+                        textManager.insertToken(tag, representedBy: "#\(tag.term)", appendCharacter: nil)
                     },
                     label: {
                         Text("Create \"\(tag.term)\"")
@@ -264,8 +277,8 @@ struct ContentView: View {
         VStack {
             ForEach(tags, id: \.id) { tag in
                 Button(
-                    action: { textManager.insert(token: tag, appendCharacter: nil) },
-                    label: { Text(tag.text).frame(maxWidth: .infinity, alignment: .leading) }
+                    action: { textManager.insertToken(tag, representedBy: "#\(tag.term)", appendCharacter: nil) },
+                    label: { Text(tag.term).frame(maxWidth: .infinity, alignment: .leading) }
                 )
             }
         }

@@ -10,8 +10,6 @@ public protocol TextToken: Hashable {
     /// - Todo: Allows clients to use ``backgroundColor``. Consider options like restore original attributes
     /// when demarking, reset tokens runs on selection (phase) change, or mark without using attributes.
     static var attributes: AttributeContainer { get }
-
-    var text: String { get }
 }
 
 // MARK: - TextTokenAttributes

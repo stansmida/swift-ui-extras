@@ -100,10 +100,6 @@ public final class TextTokenFieldManager: ObservableObject {
 
     public var text: String {
         get { uiView.text }
-        set {
-            tti = nil
-            uiView.text = newValue
-        }
     }
 
     /// `TextToken`s in `text`.
@@ -145,9 +141,29 @@ public final class TextTokenFieldManager: ObservableObject {
 
     // MARK: Manipulation
 
+    /// A method to preset a text with tokens.
+    public func setText(_ text: String, with tokens: [(any TextToken, Range<String.Index>)] = []) {
+        tti = nil
+        var attributedString = AttributedString(text, attributes: defaultTypingAttributes)
+        for t in tokens {
+            guard
+                let lowerBound = AttributedString.Index(t.1.lowerBound, within: attributedString),
+                let upperBound = AttributedString.Index(t.1.upperBound, within: attributedString)
+            else {
+                continue
+            }
+            attributedString[lowerBound ..< upperBound].textToken = AnyTextToken(base: t.0)
+            attributedString[lowerBound ..< upperBound].mergeAttributes(t.0.attributes)
+        }
+        uiView.attributedText = try! NSAttributedString(attributedString, including: \.textTokenAttributes)
+        // If the text (selection) unintentionally triggered active TTI, we just deactivate it.
+        tti = nil
+    }
+
     /// Ignored if not in active TTI.
-    public func insert(
-        token: some TextToken,
+    public func insertToken(
+        _ token: some TextToken,
+        representedBy tokenText: String,
         appendCharacter: Character? = " ",
         continueTextTokenInput: Bool = false
     ) {
@@ -164,7 +180,7 @@ public final class TextTokenFieldManager: ObservableObject {
         let triggeringCharacter = text.characters[triggeringIndex]
         let selection = selection(in: text)
         let insertionRange = triggeringIndex ..< max(triggeringIndex, selection.upperBound)
-        var insertion = AttributedString(token.text, attributes: defaultTypingAttributes.merging(token.attributes))
+        var insertion = AttributedString(tokenText, attributes: defaultTypingAttributes.merging(token.attributes))
         if let appendCharacter {
             insertion += AttributedString(String(appendCharacter))
         }

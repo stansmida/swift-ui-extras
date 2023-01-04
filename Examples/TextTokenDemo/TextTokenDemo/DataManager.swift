@@ -13,10 +13,6 @@ extension User: TextToken {
         AttributeContainer()
             .foregroundColor(UIColor.blue)
     }
-
-    var text: String {
-        name
-    }
 }
 
 struct Tag {
@@ -30,10 +26,6 @@ extension Tag: TextToken {
         AttributeContainer()
             .foregroundColor(UIColor.blue)
             .font(UIFont.monospacedSystemFont(ofSize: UIFont.systemFontSize, weight: .bold))
-    }
-
-    var text: String {
-        "#\(term)"
     }
 }
 
