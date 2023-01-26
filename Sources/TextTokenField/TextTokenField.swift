@@ -16,7 +16,8 @@ public struct TextTokenField: UIViewRepresentable {
     }
 
     public func makeUIView(context: UIViewRepresentableContext<Self>) -> UITextView {
-        manager.uiView
+        manager.uiView.removeFromSuperview()
+        return manager.uiView
     }
 }
 
