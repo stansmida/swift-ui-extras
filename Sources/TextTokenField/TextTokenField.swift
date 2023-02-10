@@ -32,6 +32,11 @@ public final class TextTokenFieldManager: ObservableObject {
         case deleteTriggerAndPhrase
     }
 
+    private enum TTIChange {
+        case before(newValue: (trigger: AttributedString.Index, isExplicit: Bool)?)
+        case after
+    }
+
     deinit {
         contentSizeObservation.invalidate()
         contentSizeObservation = nil
@@ -78,10 +83,14 @@ public final class TextTokenFieldManager: ObservableObject {
     /// is graceful and preserves both the triggering character and the phrase to allows users type arbitrary text.
     /// This property is private, clients shall access public (read-only) information from `isTextTokenInputActive`.
     @Published private var tti: (trigger: AttributedString.Index, isExplicit: Bool)? {
+        willSet {
+            setKeyboardBehavior(ttiChange: .before(newValue: newValue))
+        }
         didSet {
             // When selection remains the same but triggering is cancelled - we want to clear
             // the phrase marking.
             updatePhraseMarking()
+            setKeyboardBehavior(ttiChange: .after)
         }
     }
 
@@ -231,6 +240,25 @@ public final class TextTokenFieldManager: ObservableObject {
 
     // MARK: - Conveniences & Utils
 
+    /// This method turns off autocorrect for active TTI. Besides it is better UX, it also prevents code
+    /// from crash. The problem is that exchanging a text token for a phrase while there is autocorrect suggestion
+    /// for the phrase causes mismatch between current text and current selection. See "Potentionally unsafe
+    /// conveniences" section where we do the "unsafe arithmetics" that can cause a crash.
+    private func setKeyboardBehavior(ttiChange: TTIChange) {
+        switch ttiChange {
+            case .before(let newValue):
+                if newValue != nil {
+                    uiView.autocorrectionType = .no
+                    uiView.reloadInputViews()
+                }
+            case .after:
+                if tti == nil {
+                    uiView.autocorrectionType = .default
+                    uiView.reloadInputViews()
+                }
+        }
+    }
+
     /// - Parameter strategy: `nil` to preserve triggering character and (if exists) text between the triggering
     /// character and the caret. You typically want to preserve the text if it is ambiguous whether TTI was
     /// activated intentionally or not. This decision is supposed to be made based on `tti.isExplicit`.
@@ -379,6 +407,10 @@ public final class TextTokenFieldManager: ObservableObject {
     // static, coherent environment where attributed scope is known, and ranges exist in texts. We decided to
     // aggressively expect consistent results over trying to figure out handling arbitrary errors.
     // For this reason clients should monitor for crashes within this module as they might happen.
+    // UPDATE: We discovered that the force unwprap can crash due to text and range mismatch when exchanging
+    // a phrase for a text token while there is an active autocorrect suggestion for the phrase. For now we
+    // are turning off the autocorrection during active TTI to avoid this source of crashing but we should perhaps
+    // consider avoid force unwrapping completely and provide a gracefull solution insted.
     // TODO: Write a basic set of tests to perhaps discover crashes on different versions / systems.
 
     private func attributedText(withTextTokens: Bool) -> AttributedString {
