@@ -253,8 +253,15 @@ public final class TextTokenFieldManager: ObservableObject {
                 }
             case .after:
                 if tti == nil {
-                    uiView.autocorrectionType = .default
-                    uiView.reloadInputViews()
+                    // After TTI is deactivated, we do the token insertion in the same cycle,
+                    // and at that moment we still need the autocorrection to be off. Thus we reset
+                    // it to default in next cycle.
+                    Task {
+                        if tti == nil { // If still is nil...
+                            uiView.autocorrectionType = .default
+                            uiView.reloadInputViews()
+                        }
+                    }
                 }
         }
     }
