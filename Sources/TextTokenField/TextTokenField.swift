@@ -623,7 +623,10 @@ extension UITextView {
             newSelection = insertionRange.upperBound ..< insertionRange.upperBound
         }
         let nsNewSelection = NSRange(newSelection, in: text)
-
+        // Setting just attributed string is messed (not sure what is going on but it somehow is being autocorrected
+        // even during `autocorrectionType == .no`, and getting out of sync with `selectedRange`...). I observed
+        // that setting `text` before remedies this.
+        self.text = String(text.characters)
         attributedText = try NSAttributedString(text, including: attributeScope)
         if selectedRange != nsNewSelection {
             selectedRange = nsNewSelection
