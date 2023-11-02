@@ -108,8 +108,13 @@ public final class TextTokenFieldManager: ObservableObject {
     public let defaultTypingAttributes: AttributeContainer
     public let phraseMarkingColor: UIColor
 
+    // There are intermittent inconsistencies between `text` and `attributedText` in `UITextView`
+    // (assuming mostly within a cycle when on of them gets updated). We rely on these to be same string
+    // at any time - see unsafe operations below. Thus `attributedText` is chosen as the single source of
+    // truth (obviously as we can go only from attributed string to string but no vice versa). Do not use
+    // ``uiView.text``, but use this anytime you need to access string value.
     public var text: String {
-        get { uiView.text }
+        get { String(attributedText(withTextTokens: false).characters) }
     }
 
     /// `TextToken`s in `text`.
@@ -118,7 +123,7 @@ public final class TextTokenFieldManager: ObservableObject {
             .runs
             .compactMap { run in
                 if let textToken = run.textToken?.base {
-                    return (textToken, range(for: run.range, in: uiView.text))
+                    return (textToken, range(for: run.range, in: text))
                 } else {
                     return nil
                 }
